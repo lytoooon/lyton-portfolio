@@ -36,7 +36,7 @@ export const socials = [{ label: "GitHub", href: person.github }] as const;
 
 // -- Hero ----------------------------------------------------------------
 export const hero = {
-  lede: "Lighton Choongo designs and builds the systems that help businesses make and save money.",
+  lede: "Heyy I'm Lighton Choongo, I design and build the systems that help businesses make and save money.",
   sub: "Process automation, product and UI/UX design, from Zambia.",
   studying: "Student at the University of Zambia",
 } as const;
