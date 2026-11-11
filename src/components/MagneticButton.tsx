@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { getGsap, prefersReducedMotion } from "@/lib/gsap";
+import { getGsap } from "@/lib/gsap";
+import { hasFinePointer, prefersReducedMotion } from "@/lib/motion";
 
 /**
- * Wraps a single interactive child and pulls it gently toward the pointer
- * while hovered — a light touch, not a rubber-band. No-ops on touch and
- * reduced-motion.
+ * Wraps one button or link and pulls it gently toward the mouse while you
+ * hover. A light touch, not a rubber band. Does nothing on touch screens or
+ * with reduced motion.
  */
 export default function MagneticButton({
   children,
-  strength = 0.35,
+  strength = 0.3,
   className = "",
 }: {
   children: ReactNode;
@@ -21,8 +22,7 @@ export default function MagneticButton({
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    if (prefersReducedMotion() || !window.matchMedia("(pointer: fine)").matches) return;
+    if (!el || prefersReducedMotion() || !hasFinePointer()) return;
 
     const { gsap } = getGsap();
     const moveX = gsap.quickTo(el, "x", { duration: 0.5, ease: "power3.out" });
@@ -30,10 +30,8 @@ export default function MagneticButton({
 
     const onMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
-      const relX = e.clientX - (rect.left + rect.width / 2);
-      const relY = e.clientY - (rect.top + rect.height / 2);
-      moveX(relX * strength);
-      moveY(relY * strength);
+      moveX((e.clientX - (rect.left + rect.width / 2)) * strength);
+      moveY((e.clientY - (rect.top + rect.height / 2)) * strength);
     };
     const onLeave = () => {
       moveX(0);

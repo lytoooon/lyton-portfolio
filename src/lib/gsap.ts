@@ -1,24 +1,16 @@
-"use client";
-
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText } from "gsap/SplitText";
 
 let registered = false;
 
-/** Registers GSAP plugins exactly once, client-side only. Not a React hook —
- * deliberately not prefixed with "use" so it can be called from callbacks. */
+/**
+ * Registers the GSAP plugins once, in the browser only.
+ * Call it inside effects, never at the top level of a file.
+ */
 export function getGsap() {
   if (!registered && typeof window !== "undefined") {
-    gsap.registerPlugin(ScrollTrigger, SplitText);
+    gsap.registerPlugin(ScrollTrigger);
     registered = true;
   }
-  return { gsap, ScrollTrigger, SplitText };
-}
-
-export function prefersReducedMotion() {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  return { gsap, ScrollTrigger };
 }

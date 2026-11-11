@@ -1,35 +1,32 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { getGsap, prefersReducedMotion } from "@/lib/gsap";
+import { getGsap } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 
-type RevealProps = {
-  children: ReactNode;
-  /** Stagger delay in seconds, useful when several Reveals sit in a row. */
-  delay?: number;
-  y?: number;
-  className?: string;
-  as?: "div" | "li";
-};
-
+/**
+ * Fades its content in and lifts it a little the first time it scrolls into
+ * view. Slow on purpose. With reduced motion the content is just there.
+ */
 export default function Reveal({
   children,
   delay = 0,
-  y = 28,
+  y = 24,
   className = "",
-  as = "div",
-}: RevealProps) {
-  const ref = useRef<HTMLDivElement | HTMLLIElement>(null);
+}: {
+  children: ReactNode;
+  /** Seconds to wait before starting, useful for a row of items. */
+  delay?: number;
+  y?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || prefersReducedMotion()) return;
 
-    if (prefersReducedMotion()) {
-      return; // element is already visible by default — nothing to animate
-    }
-
-    const { gsap, ScrollTrigger } = getGsap();
+    const { gsap } = getGsap();
     const ctx = gsap.context(() => {
       gsap.fromTo(
         el,
@@ -37,31 +34,19 @@ export default function Reveal({
         {
           opacity: 1,
           y: 0,
-          duration: 0.9,
+          duration: 1.2,
           delay,
           ease: "power3.out",
-          scrollTrigger: {
-            trigger: el,
-            start: "top 85%",
-            once: true,
-          },
+          scrollTrigger: { trigger: el, start: "top 88%", once: true },
         },
       );
     });
+    return () => ctx.revert();
+  }, [delay, y]);
 
-    return () => {
-      ctx.revert();
-      ScrollTrigger.getAll().forEach((t) => {
-        if (t.trigger === el) t.kill();
-      });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const Tag = as;
   return (
-    <Tag ref={ref as never} className={className}>
+    <div ref={ref} className={className}>
       {children}
-    </Tag>
+    </div>
   );
 }
