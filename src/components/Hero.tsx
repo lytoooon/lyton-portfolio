@@ -22,7 +22,7 @@ export default function Hero() {
           <span>
             {person.country}, <LocalClock /> local time
           </span>
-          <span className="cue">Scroll</span>
+          
           <span>{hero.studying}</span>
         </div>
       </div>
