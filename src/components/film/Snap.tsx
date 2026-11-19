@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { getLenis, scrollToY } from "@/components/SmoothScroll";
 import { prefersReducedMotion } from "@/lib/motion";
+import { JUMP_SECONDS, STEP_SECONDS } from "@/lib/film/config";
 
-/** How long one step of the film takes to play, in seconds. */
-const STEP_SECONDS = 2.2;
+/** Same curve as the particles' morph, so words and shapes arrive together. */
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 /**
  * One scroll = one step. Instead of letting the wheel scroll freely (and
@@ -19,6 +20,9 @@ const STEP_SECONDS = 2.2;
  * phase, so they run before Lenis sees the event. We cancel the browser's own
  * scroll (preventDefault) and set lenisStopPropagation, which tells Lenis to
  * ignore the event.
+ *
+ * Keyboard users who Tab into a step that isn't on screen are glided to it,
+ * so what has focus is always what you see.
  */
 export default function Snap() {
   useEffect(() => {
@@ -68,7 +72,7 @@ export default function Snap() {
       if (lenis) {
         lenis.scrollTo(ys[to], {
           duration: STEP_SECONDS,
-          easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+          easing: easeInOut,
           lock: true,
           force: true,
           onComplete: done,
@@ -136,13 +140,41 @@ export default function Snap() {
       go(down ? 1 : -1);
     };
 
+    // Focus moved into a step that's off screen: go to it.
+    const onFocus = (e: FocusEvent) => {
+      if (busy || !(e.target instanceof Element)) return;
+      const step = e.target.closest<HTMLElement>(".step");
+      if (!step || step.dataset.live === "true") return;
+      const section = step.closest("section");
+      const marker = section?.querySelectorAll<HTMLElement>(":scope > [data-shot]")[Number(step.dataset.step)];
+      if (!marker) return;
+      const ys = stops();
+      const y = marker.getBoundingClientRect().top + window.scrollY;
+      const to = ys.findIndex((s) => Math.abs(s - y) < 2);
+      busy = true;
+      const done = () => {
+        busy = false;
+        lastMove = performance.now();
+      };
+      const lenis = getLenis();
+      if (lenis) lenis.scrollTo(to >= 0 ? ys[to] : y, { duration: JUMP_SECONDS, easing: easeInOut, force: true, onComplete: done });
+      else {
+        scrollToY(y);
+        done();
+      }
+      window.clearTimeout(release);
+      release = window.setTimeout(done, JUMP_SECONDS * 1000 + 300);
+    };
+
     const opts = { capture: true, passive: false } as const;
     window.addEventListener("wheel", onWheel, opts);
     window.addEventListener("touchstart", onTouchStart, opts);
     window.addEventListener("touchmove", onTouchMove, opts);
     window.addEventListener("touchend", onTouchEnd, opts);
     window.addEventListener("keydown", onKey);
+    document.addEventListener("focusin", onFocus);
     return () => {
+      document.removeEventListener("focusin", onFocus);
       window.removeEventListener("wheel", onWheel, opts);
       window.removeEventListener("touchstart", onTouchStart, opts);
       window.removeEventListener("touchmove", onTouchMove, opts);

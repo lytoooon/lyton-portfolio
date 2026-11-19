@@ -10,46 +10,36 @@ import "@fontsource-variable/martian-mono/wdth.css";
 import "./globals.css";
 import CustomCursor from "@/components/CustomCursor";
 import SmoothScroll from "@/components/SmoothScroll";
-import { person, socials } from "@/data/site";
-
-const title = `${person.name} | Product and process automation, UI/UX design`;
-const description =
-  "Lighton Choongo (Lyton) is a software engineering student in Lusaka, Zambia. He designs and builds automation, products and interfaces that help businesses make and save money.";
+import { person } from "@/data/site";
+import { brand, jsonLdScript, keywords, siteDescription, siteJsonLd, siteTitle } from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(person.url),
   title: {
-    default: title,
+    default: siteTitle,
     template: `%s | ${person.name}`,
   },
-  description,
+  description: siteDescription,
+  keywords,
+  authors: [{ name: person.name, url: person.url }],
+  creator: person.name,
   alternates: { canonical: "/" },
+  robots: { index: true, follow: true, "max-image-preview": "large" },
   openGraph: {
-    title,
-    description,
+    title: siteTitle,
+    description: siteDescription,
     url: person.url,
     siteName: person.name,
+    locale: "en_GB",
     type: "website",
   },
-  twitter: { card: "summary_large_image", title, description },
-  icons: { icon: "/favicon.ico" },
+  twitter: { card: "summary_large_image", title: siteTitle, description: siteDescription },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#cdfd50",
-};
-
-// Tells search engines who this site is about.
-const personSchema = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  name: person.name,
-  alternateName: person.nickname,
-  url: person.url,
-  email: person.email,
-  jobTitle: "Software engineering student and UI/UX designer",
-  address: { "@type": "PostalAddress", addressLocality: "Lusaka", addressCountry: "ZM" },
-  sameAs: socials.map((s) => s.href),
+  themeColor: brand.lime,
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -59,11 +49,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Without JavaScript the film can't play: show every step as a normal page. */}
+        <noscript>
+          <style>{`.scene{height:auto!important}.frame{position:relative}.step{position:relative;min-height:100vh;opacity:1}.step :is(a,button){pointer-events:auto}.tail{display:none}`}</style>
+        </noscript>
+      </head>
       <body className="antialiased">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
-        />
+        <a href="#content" className="skip-link">
+          Skip to content
+        </a>
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(siteJsonLd())} />
         <SmoothScroll />
         <CustomCursor />
         {children}

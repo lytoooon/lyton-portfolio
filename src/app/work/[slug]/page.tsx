@@ -8,6 +8,7 @@ import { paletteStyle } from "@/lib/palette-style";
 import Footer from "@/components/Footer";
 import { getProject, nextProject, projects } from "@/data/projects";
 import { person } from "@/data/site";
+import { jsonLdScript, projectJsonLd } from "@/lib/seo";
 
 type Params = { slug: string };
 
@@ -26,16 +27,20 @@ export async function generateMetadata({
   const { slug } = await params;
   const project = getProject(slug);
   if (!project) return {};
+  const title = `${project.name} case study`;
   return {
-    title: `${project.name} case study`,
+    title,
     description: project.intro,
+    keywords: [project.name, ...project.tags, person.name, "case study"],
     alternates: { canonical: `/work/${project.slug}` },
     openGraph: {
-      title: `${project.name} case study | ${person.name}`,
+      title: `${title} | ${person.name}`,
       description: project.intro,
       url: `${person.url}/work/${project.slug}`,
       type: "article",
+      authors: [person.name],
     },
+    twitter: { card: "summary_large_image", title: `${title} | ${person.name}`, description: project.intro },
   };
 }
 
@@ -54,8 +59,9 @@ export default async function CaseStudy({ params }: { params: Promise<Params> })
 
   return (
     <div className="case themed" style={paletteStyle(project.palette)}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(projectJsonLd(project))} />
       <NavBar />
-      <main>
+      <main id="content" tabIndex={-1}>
         <div className="case-hero">
           <p className="kicker">{project.label}</p>
           <Big as="h1" lines={project.title} className="case-title" />

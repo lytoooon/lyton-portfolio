@@ -1,31 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { getGsap } from "@/lib/gsap";
-import { person } from "@/data/site";
-
-export const filmNav = [
-  { id: "top", label: "Intro" },
-  { id: "about", label: "About" },
-  { id: "skills", label: "Skills" },
-  { id: "work", label: "Work" },
-  { id: "path", label: "Path" },
-  { id: "contact", label: "Contact" },
-] as const;
+import { nav, person } from "@/data/site";
 
 /**
  * The fixed interface around the film:
  * - top left, your name
  * - top right, "Let's talk"
  * - right edge, the scene list. The current scene stretches wide.
+ *   On touch screens there's no hover, so the first tap opens the list (every
+ *   scene name shows) and a second tap jumps to that scene.
  * Links are ordinary #anchors; SmoothScroll.tsx glides them to the right spot.
  */
 export default function RightNav() {
   const [active, setActive] = useState<string>("top");
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef(0);
+
+  const peek = () => {
+    setOpen(true);
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setOpen(false), 2600);
+  };
+
+  const onTap = (e: MouseEvent<HTMLAnchorElement>) => {
+    const touch = window.matchMedia("(hover: none)").matches;
+    if (touch && !open) {
+      e.preventDefault();
+      peek();
+      return;
+    }
+    window.clearTimeout(closeTimer.current);
+    setOpen(false);
+  };
+
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
 
   useEffect(() => {
     const { ScrollTrigger } = getGsap();
-    const triggers = filmNav.map((item) => {
+    const triggers = nav.map((item) => {
       const el = document.getElementById(item.id);
       if (!el) return null;
       return ScrollTrigger.create({
@@ -42,7 +56,6 @@ export default function RightNav() {
     <>
       <a href="#top" className="brand" aria-label={`${person.name}, back to the start`}>
         <span className="brand-mark">{person.nickname}</span>
-        <span className="brand-sub">{person.name} — Reel ©2026</span>
       </a>
 
       <div className="topright">
@@ -51,14 +64,15 @@ export default function RightNav() {
         </a>
       </div>
 
-      <nav className="rail" aria-label="Scenes">
+      <nav className={`rail${open ? " is-open" : ""}`} aria-label="Scenes">
         <ol>
-          {filmNav.map((item, i) => (
+          {nav.map((item, i) => (
             <li key={item.id}>
               <a
                 href={`#${item.id}`}
                 className={active === item.id ? "is-active" : undefined}
-                aria-current={active === item.id ? "step" : undefined}
+                aria-current={active === item.id ? "location" : undefined}
+                onClick={onTap}
               >
                 <span className="rail-no">{String(i + 1).padStart(2, "0")}</span>
                 <span className="rail-label">{item.label}</span>

@@ -27,6 +27,8 @@ export type Keyframe = {
   tilt: number;
   /** The resting angle a swaying shape turns around. */
   turn: number;
+  /** 1 = holds still (no sway, no mouse tilt) and its points flow instead. */
+  still: number;
   color: RGB;
   accent: RGB;
 };
@@ -50,6 +52,8 @@ uniform float uCamZ;
 uniform vec2 uMouse;
 uniform float uMouseAmt;
 uniform float uSize;
+uniform float uFlow;
+uniform float uDust;
 
 out float vTone;
 out float vAccent;
@@ -70,6 +74,24 @@ void main() {
 
   // A slow breath so the shape is never perfectly still.
   p += 0.011 * vec3(sin(uTime * 1.3 + aRand.x * 11.0), sin(uTime * 1.1 + aRand.y * 13.0), sin(uTime * 1.6 + aRand.z * 9.0));
+
+  // A still shape keeps its points busy instead.
+  float glow = 0.0;
+  float flowFade = 1.0;
+  if (uFlow > 0.0) {
+    // A slow ripple rolls across the face, lifting points towards you.
+    float wave = sin(p.x * 4.2 - uTime * 1.25 + p.y * 2.5);
+    p.z += uFlow * wave * 0.06;
+    glow = uFlow * wave;
+    // Every point shimmers in its own tiny circle.
+    float ph = uTime * (0.7 + d * 1.1) + aRand.x * 30.0;
+    p.xy += uFlow * 0.007 * vec2(cos(ph), sin(ph));
+    // A few (uDust) drift up off the letters like dust, fade, and start again.
+    float sel = step(1.0 - uDust, fract(d * 53.7));
+    float life = fract(uTime * (0.06 + 0.04 * aRand.y) + d * 7.31);
+    p += uFlow * sel * vec3(aRand.x * 0.03, life * 0.12, aRand.z * 0.05);
+    flowFade = 1.0 - uFlow * sel * (smoothstep(0.3, 1.0, life) + 1.0 - smoothstep(0.0, 0.06, life));
+  }
 
   // Intro: points rush in from far away.
   float it = clamp((uIntro - d * 0.55) / 0.45, 0.0, 1.0);
@@ -100,9 +122,9 @@ void main() {
   float size = uSize * (uCamZ / depth) * (0.55 + d * 0.95);
   gl_PointSize = clamp(floor(size + 0.5), 1.0, uSize * 2.2);
 
-  vTone = clamp(0.55 + w.z * 0.35 / max(uScale, 0.001), 0.0, 1.0);
+  vTone = clamp(0.55 + w.z * 0.35 / max(uScale, 0.001) + glow * 0.3, 0.0, 1.0);
   vAccent = step(0.955, fract(d * 37.13));
-  vFade = (1.0 - f * 0.55) * it;
+  vFade = (1.0 - f * 0.55) * it * clamp(flowFade, 0.0, 1.0);
 }
 `;
 
@@ -155,17 +177,31 @@ export class ParticleEngine {
   private dpr = 1;
   private aspect = 1;
   private running = false;
+  private maxDpr: number;
+  private frameGap: number;
+  private lastFrame = 0;
+  private dust: number;
+  private rot = new Float32Array(9);
 
   /** World units: the camera sits at z = CAM_Z with a 35° field of view. */
   static readonly CAM_Z = 5;
   static readonly FOCAL = 1 / Math.tan((35 * Math.PI) / 360);
 
-  constructor(canvas: HTMLCanvasElement, count: number) {
+  /**
+   * `maxDpr` caps the canvas resolution and `fps` the frame rate: both are
+   * lowered on phones and weak devices to save battery (see lib/film/quality.ts).
+   * `dust` is the share of a still shape's points that drift off (0-1).
+   */
+  constructor(canvas: HTMLCanvasElement, count: number, { maxDpr = 2, fps = 60, dust = 0.08 } = {}) {
     const gl = canvas.getContext("webgl2", { antialias: false, alpha: true, premultipliedAlpha: true });
     if (!gl) throw new Error("WebGL2 not available");
     this.gl = gl;
     this.canvas = canvas;
     this.count = count;
+    this.maxDpr = maxDpr;
+    // A little under the real gap, so 60 fps isn't knocked down to 30 by timer jitter.
+    this.frameGap = 1000 / fps - 2;
+    this.dust = dust;
 
     const prog = gl.createProgram()!;
     gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
@@ -174,7 +210,7 @@ export class ParticleEngine {
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) ?? "link error");
     gl.useProgram(prog);
 
-    for (const name of ["uT", "uScatter", "uTime", "uIntro", "uRot", "uScale", "uOffset", "uFocal", "uAspect", "uCamZ", "uMouse", "uMouseAmt", "uSize", "uColor", "uAccent"]) {
+    for (const name of ["uT", "uScatter", "uTime", "uIntro", "uRot", "uScale", "uOffset", "uFocal", "uAspect", "uCamZ", "uMouse", "uMouseAmt", "uSize", "uFlow", "uDust", "uColor", "uAccent"]) {
       this.uniforms[name] = gl.getUniformLocation(prog, name);
     }
 
@@ -235,7 +271,7 @@ export class ParticleEngine {
   }
 
   resize() {
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.canvas.width = Math.round(w * this.dpr);
@@ -253,9 +289,12 @@ export class ParticleEngine {
   startLoop() {
     if (this.running) return;
     this.running = true;
-    const loop = () => {
+    const loop = (now: number) => {
       if (!this.running) return;
-      this.render();
+      if (now - this.lastFrame >= this.frameGap) {
+        this.lastFrame = now;
+        this.render();
+      }
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
@@ -305,12 +344,14 @@ export class ParticleEngine {
 
     const te = smooth(t);
     const rotFor = (k: Keyframe, idx: number) =>
-      k.spin > 0 ? time * 0.22 * k.spin + idx * 0.9 : k.turn + Math.sin(time * 0.45) * 0.22;
-    const ry = lerp(rotFor(A, i), rotFor(B, j), te) + this.tiltMouse.x * 0.35;
-    const rx = lerp(A.tilt, B.tilt, te) - this.tiltMouse.y * 0.2;
+      k.spin > 0 ? time * 0.22 * k.spin + idx * 0.9 : k.turn + Math.sin(time * 0.45) * 0.22 * (1 - k.still);
+    const still = lerp(A.still, B.still, te);
+    const ry = lerp(rotFor(A, i), rotFor(B, j), te) + this.tiltMouse.x * 0.35 * (1 - still);
+    const rx = lerp(A.tilt, B.tilt, te) - this.tiltMouse.y * 0.2 * (1 - still);
     const [cx, sx, cy, sy] = [Math.cos(rx), Math.sin(rx), Math.cos(ry), Math.sin(ry)];
-    // Column-major 3x3: rotate around y, then x.
-    const rot = new Float32Array([cy, sx * sy, -cx * sy, 0, cx, sx, sy, -sx * cy, cx * cy]);
+    // Column-major 3x3: rotate around y, then x. Reused every frame.
+    const rot = this.rot;
+    rot.set([cy, sx * sy, -cx * sy, 0, cx, sx, sy, -sx * cy, cx * cy]);
 
     const u = this.uniforms;
     gl.uniform1f(u.uT, t);
@@ -324,6 +365,8 @@ export class ParticleEngine {
     gl.uniform2f(u.uMouse, m.x, m.y);
     gl.uniform1f(u.uMouseAmt, m.amt);
     gl.uniform1f(u.uSize, 2.1 * this.dpr);
+    gl.uniform1f(u.uFlow, still);
+    gl.uniform1f(u.uDust, this.dust);
     gl.uniform3fv(u.uColor, mixRgb(A.color, B.color, te));
     gl.uniform3fv(u.uAccent, mixRgb(A.accent, B.accent, te));
 

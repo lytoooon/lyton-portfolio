@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import { getGsap } from "@/lib/gsap";
 import { prefersReducedMotion } from "@/lib/motion";
+import { JUMP_SECONDS } from "@/lib/film/config";
 
 let instance: Lenis | null = null;
 
@@ -14,7 +15,7 @@ export function getLenis() {
 }
 
 /** Scrolls to a pixel position, smoothly when possible. */
-export function scrollToY(y: number, duration = 1.8) {
+export function scrollToY(y: number, duration = JUMP_SECONDS) {
   if (instance) instance.scrollTo(y, { duration });
   else window.scrollTo({ top: y });
 }
@@ -50,6 +51,8 @@ export default function SmoothScroll() {
 
     // Links like href="#work" glide to their section.
     const onClick = (e: MouseEvent) => {
+      // Something else already handled it (e.g. the first tap on the mobile scene list).
+      if (e.defaultPrevented) return;
       const anchor = (e.target as HTMLElement | null)?.closest('a[href^="#"]');
       const id = anchor?.getAttribute("href");
       if (!id || id === "#") return;
@@ -64,7 +67,9 @@ export default function SmoothScroll() {
       // A scene's text is fully on screen at its first marker, not at its top edge.
       const marker = target.matches("[data-scene]") ? target.querySelector("[data-shot]") : null;
       const y = (marker ?? target).getBoundingClientRect().top + window.scrollY;
-      lenis.scrollTo(y, { duration: 1.8 });
+      lenis.scrollTo(y, { duration: JUMP_SECONDS });
+      // Move keyboard focus too (e.g. "Skip to content"), without a second jump.
+      if (target instanceof HTMLElement && target.hasAttribute("tabindex")) target.focus({ preventScroll: true });
     };
     document.addEventListener("click", onClick);
 

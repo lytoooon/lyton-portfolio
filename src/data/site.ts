@@ -23,13 +23,15 @@ export const person = {
 } as const;
 
 // -- Navigation --------------------------------------------------------
-// The bottom dock. Each href must match a section id on the page.
+// The scene list on the right of the home page. Each id must match a
+// <Scene id="..."> in src/app/page.tsx.
 export const nav = [
-  { label: "About", href: "#about" },
-  { label: "Skills", href: "#skills" },
-  { label: "Work", href: "#work" },
-  { label: "Path", href: "#path" },
-  { label: "Contact", href: "#contact" },
+  { id: "top", label: "Intro" },
+  { id: "about", label: "About" },
+  { id: "skills", label: "Skills" },
+  { id: "work", label: "Work" },
+  { id: "path", label: "Path" },
+  { id: "contact", label: "Contact" },
 ] as const;
 
 export const socials = [{ label: "GitHub", href: person.github }] as const;
@@ -38,22 +40,7 @@ export const socials = [{ label: "GitHub", href: person.github }] as const;
 export const hero = {
   lede: "Heyy I'm Lighton Choongo, I design and build the systems that help businesses make and save money.",
   sub: "Process automation, product and UI/UX design, from Zambia.",
-  studying: "Student at the University of Zambia",
 } as const;
-
-// The scrolling strip under the hero.
-export const strip = [
-  "Process automation",
-  "UI/UX design",
-  "Figma",
-  "TypeScript",
-  "React",
-  "Next.js",
-  "Tailwind CSS",
-  "Python",
-  "Java",
-  "SQL",
-] as const;
 
 // -- About ---------------------------------------------------------------
 export const about = {

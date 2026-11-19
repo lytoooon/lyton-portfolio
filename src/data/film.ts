@@ -66,6 +66,8 @@ export type Shot = {
   spin?: number;
   /** For swaying shapes: the angle they sway around, in radians. */
   turn?: number;
+  /** Holds perfectly still (no turning, no mouse tilt); its points ripple and drift instead. */
+  still?: boolean;
 };
 
 // A headline is a list of lines. Each line has its own width (50 = squeezed
@@ -83,7 +85,6 @@ export type Line = {
 };
 
 export const intro = {
-  tag: "Lighton Choongo / Portfolio reel / 2026",
   top: [
     { text: "Systems", w: 50, outline: true },
     { text: "that pay", w: 150 },
@@ -92,10 +93,6 @@ export const intro = {
     { text: "Make it.", w: 150 },
     { text: "Save it.", w: 50, outline: true },
   ] satisfies Line[],
-  callouts: [
-    { value: "Lusaka", label: "Local time", clock: true },
-  ],
-  hint: "Scroll to play",
 };
 
 export const aboutFilm = {

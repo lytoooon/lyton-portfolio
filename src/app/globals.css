@@ -82,6 +82,28 @@ button {
   outline-offset: 4px;
 }
 
+/* "Skip to content": hidden until a keyboard user tabs to it. */
+.skip-link {
+  position: fixed;
+  top: var(--pad);
+  left: 50%;
+  z-index: 100;
+  padding: 0.7em 1.2em;
+  translate: -50% -200%;
+  background: var(--fg-now);
+  color: var(--bg-now);
+  font-family: var(--font-mono-family);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: translate 0.2s;
+}
+
+.skip-link:focus {
+  translate: -50% 0;
+}
+
 html.has-overlay,
 html.has-overlay body {
   overflow: hidden;
@@ -99,31 +121,30 @@ html.has-overlay body {
 /* Sized to fill a column of --fit width, never bigger than --cap. */
 .big {
   /* About half the screen for words, the rest for the shape. */
-  --fit: 50vw;
-  --cap: min(12.5vw, 250px);
+  --fit: 56vw;
+  --cap: min(15vw, 300px);
   margin: 0;
   font-family: var(--font-display-family);
   font-weight: 800;
   font-size: min(var(--cap), calc(var(--fit) / var(--units, 4)));
-  line-height: 0.8;
-  letter-spacing: -0.01em;
+  line-height: 0.76;
+  letter-spacing: -0.04em;
 }
 
 .ln {
   display: block;
-  overflow: hidden;
-  /* Room for italics and descenders inside the mask. */
+  /* Room for italics and descenders. */
   padding: 0.04em 0.12em 0.08em 0;
-  margin-bottom: -0.1em;
+  margin-bottom: -0.16em;
 }
 
 .ln-i {
   display: inline-block;
   font-stretch: calc(var(--w, 100) * 1%);
-  letter-spacing: calc((100 - var(--w, 100)) * 0.0005em);
+  letter-spacing: calc(-0.04em + (100 - var(--w, 100)) * 0.0004em);
   padding-left: calc(var(--indent, 0) * 1em);
   white-space: nowrap;
-  will-change: transform;
+  will-change: filter, opacity;
 }
 
 .ln-i.is-italic {
@@ -218,98 +239,18 @@ html.has-overlay body {
   image-rendering: pixelated;
 }
 
-/* A viewfinder grid and a fine print-dot texture. Static on purpose: the
-   movement comes from the particles and the wipes. */
+/* A faint print-dot texture around the edges. */
 .stage-grid {
-  opacity: 0.11;
-  background-image:
-    radial-gradient(circle, var(--fg-now) 0.7px, transparent 1px),
-    linear-gradient(to right, var(--fg-now) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--fg-now) 1px, transparent 1px);
-  background-size:
-    6px 6px,
-    calc(100vw / 8) 100%,
-    100% calc(100vh / 6);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, transparent 30%, #000 85%);
-  mask-image: radial-gradient(ellipse at 50% 50%, transparent 30%, #000 85%);
-}
-
-/* The current scene number, huge and hollow, in the corner. */
-.stage-num {
-  position: absolute;
-  left: calc(var(--pad) * 0.4);
-  bottom: -0.17em;
-  font-family: var(--font-display-family);
-  font-size: 62vh;
-  font-weight: 800;
-  font-stretch: 50%;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--fg-now);
-  opacity: 0.16;
+  opacity: 0.08;
+  background-image: radial-gradient(circle, var(--fg-now) 0.7px, transparent 1px);
+  background-size: 6px 6px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, transparent 35%, #000 90%);
+  mask-image: radial-gradient(ellipse at 50% 50%, transparent 35%, #000 90%);
 }
 
 .stage-canvas {
   width: 100%;
   height: 100%;
-}
-
-.hud {
-  position: absolute;
-  left: var(--pad);
-  bottom: calc(var(--pad) * 0.8 + 6px);
-  display: flex;
-  gap: 2em;
-  align-items: center;
-  font-family: var(--font-mono-family);
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hud-time {
-  display: flex;
-  align-items: center;
-  gap: 0.8em;
-  font-variant-numeric: tabular-nums;
-}
-
-.hud-rec {
-  width: 8px;
-  height: 8px;
-  background: var(--accent-now);
-  animation: blink 1.2s steps(2, jump-none) infinite;
-}
-
-@keyframes blink {
-  50% {
-    opacity: 0.15;
-  }
-}
-
-.hud-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background: color-mix(in srgb, var(--fg-now) 14%, transparent);
-}
-
-.hud-bar span {
-  position: absolute;
-  inset: 0;
-  background: var(--fg-now);
-  transform: scaleX(0);
-  transform-origin: 0 50%;
-}
-
-.hud-bar i {
-  position: absolute;
-  bottom: 0;
-  width: 1px;
-  height: 10px;
-  background: var(--fg-now);
 }
 
 /* ------------------------------------------------------------------ */
@@ -340,24 +281,19 @@ html.has-overlay body {
   pointer-events: none;
 }
 
+/* Steps off screen are see-through but stay in the page for screen readers
+   and keyboards. Only the live step (data-live, set by Scene.tsx) takes clicks. */
 .step {
   position: absolute;
   inset: 0;
-}
-
-.step {
-  visibility: hidden;
   opacity: 0;
 }
 
-.step.is-open {
-  visibility: visible;
+.step[data-live="true"] {
   opacity: 1;
 }
 
-.step a,
-.step button,
-.step .ticker {
+.step[data-live="true"] :is(a, button, .ticker) {
   pointer-events: auto;
 }
 
@@ -412,7 +348,9 @@ html.measuring .frame * {
 
 html.measuring .ln-i {
   font-stretch: calc(var(--w0, 100) * 1%) !important;
-  letter-spacing: calc((100 - var(--w0, 100)) * 0.0005em) !important;
+  letter-spacing: calc(-0.04em + (100 - var(--w0, 100)) * 0.0004em) !important;
+  filter: none !important;
+  opacity: 1 !important;
 }
 
 /* Pixel reveals (Scene.tsx) draw a canvas over these elements. */
@@ -444,18 +382,13 @@ html.measuring .ln-i {
   margin: 0;
 }
 
-.intro-tag {
-  top: calc(var(--pad) + 76px);
-  left: var(--pad);
-}
-
 .intro-top {
-  top: calc(var(--pad) + 112px);
+  top: calc(var(--pad) + 64px);
   left: calc(var(--pad) - 0.04em);
 }
 
 .intro-top .big {
-  --fit: 52vw;
+  --fit: 60vw;
 }
 
 .intro-bottom {
@@ -465,7 +398,7 @@ html.measuring .ln-i {
 }
 
 .intro-bottom .big {
-  --fit: 40vw;
+  --fit: 46vw;
 }
 
 .intro-lede {
@@ -477,96 +410,6 @@ html.measuring .ln-i {
   line-height: 1.45;
 }
 
-.callouts {
-  inset: 0;
-  list-style: none;
-  padding: 0;
-  pointer-events: none;
-}
-
-.callout {
-  position: absolute;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 0.7em;
-  font-family: var(--font-mono-family);
-  font-size: clamp(9.5px, 0.66vw, 12px);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  line-height: 1.4;
-}
-
-.callout i {
-  grid-row: span 2;
-  width: 0.9em;
-  height: 0.9em;
-  margin-top: 0.25em;
-  background: var(--accent-now);
-}
-
-.callout b {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.callout span {
-  opacity: 0.75;
-}
-
-.callout.c1 {
-  top: 19vh;
-  right: calc(var(--rail) + var(--pad) + 4vw);
-}
-
-.callout.c2 {
-  top: 63vh;
-  left: var(--pad);
-}
-
-.callout.c3 {
-  top: 47vh;
-  right: calc(var(--rail) + var(--pad));
-}
-
-.intro-hint {
-  left: 50%;
-  bottom: 4vh;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono-family);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.hint-line {
-  display: block;
-  width: 1px;
-  height: 46px;
-  background: currentColor;
-  transform-origin: 50% 0;
-  animation: hint 1.8s var(--ease-out) infinite;
-}
-
-@keyframes hint {
-  0% {
-    transform: scaleY(0);
-  }
-  50% {
-    transform: scaleY(1);
-    transform-origin: 50% 0;
-  }
-  51% {
-    transform-origin: 50% 100%;
-  }
-  100% {
-    transform: scaleY(0);
-    transform-origin: 50% 100%;
-  }
-}
 
 /* -- Pieces used across scenes ------------------------------------- */
 
@@ -838,14 +681,6 @@ kbd {
   line-height: 1;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-}
-
-.brand-sub {
-  font-family: var(--font-mono-family);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.75;
 }
 
 .topright {
@@ -1343,12 +1178,9 @@ kbd {
   }
 
   .big {
-    --fit: 84vw;
-    --cap: 24vw;
-  }
-
-  .intro-hint {
-    display: none;
+    /* Full width, minus the side padding and the scene list. */
+    --fit: calc(100vw - var(--rail) - var(--pad) * 2);
+    --cap: 27vw;
   }
 
   .kicker {
@@ -1356,7 +1188,7 @@ kbd {
   }
 
   .intro-top {
-    top: calc(var(--pad) + 96px);
+    top: calc(var(--pad) + 64px);
   }
 
   .intro-top .big {
@@ -1376,17 +1208,6 @@ kbd {
     right: calc(var(--rail) + var(--pad));
   }
 
-  .callout.c2,
-  .callout.c3 {
-    display: none;
-  }
-
-  .callout.c1 {
-    top: auto;
-    bottom: 30vh;
-    left: var(--pad);
-    display: none;
-  }
 
   .sub {
     font-size: clamp(19px, 5.4vw, 28px);
@@ -1407,8 +1228,6 @@ kbd {
     bottom: 3vh;
   }
 
-  .brand-sub,
-  .hud-scene,
   .project-title::after {
     display: none;
   }
@@ -1425,17 +1244,47 @@ kbd {
     padding-right: 8px;
   }
 
+  /* No hover on phones: names are tucked away until the list is tapped open
+     (see RightNav.tsx), so they never cover the words. */
   .rail-label {
-    display: none;
+    display: inline-block;
+    max-width: 0;
+    overflow: hidden;
+    font-size: 15px;
+    opacity: 0;
+    transition:
+      max-width 0.5s var(--ease-out),
+      opacity 0.3s,
+      font-stretch 0.5s var(--ease-out);
+  }
+
+  .rail a.is-active .rail-label {
+    font-size: 15px;
+    font-stretch: 100%;
+  }
+
+  .rail.is-open .rail-label {
+    max-width: 9em;
+    opacity: 0.8;
+  }
+
+  .rail.is-open a.is-active .rail-label {
+    opacity: 1;
+  }
+
+  .rail.is-open a {
+    padding: 9px 0;
+  }
+
+  .rail.is-open ol {
+    padding: 8px 10px 8px 0;
+    background: color-mix(in srgb, var(--bg-now) 82%, transparent);
+    backdrop-filter: blur(6px);
   }
 
   .rail a.is-active .rail-no {
     opacity: 1;
     font-weight: 800;
-  }
-
-  .stage-num {
-    font-size: 40vh;
   }
 
   .overlay-intro,
@@ -1466,17 +1315,18 @@ kbd {
   .step {
     position: relative;
     min-height: 100vh;
-    visibility: visible;
     opacity: 1;
+  }
+
+  .step :is(a, button, .ticker) {
+    pointer-events: auto;
   }
 
   .tail {
     display: none;
   }
 
-  .ticker-track,
-  .hint-line,
-  .hud-rec {
+  .ticker-track {
     animation: none;
   }
 }

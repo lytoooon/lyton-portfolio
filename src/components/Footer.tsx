@@ -6,7 +6,7 @@ export default function Footer() {
 
   return (
     <footer className="relative z-[1] mt-[12vh] border-t border-line bg-bg py-14">
-      <div className="wrap">
+      <div className="px-[var(--pad)]">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <p className="flex items-center gap-2 font-display text-lg text-fg">

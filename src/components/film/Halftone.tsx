@@ -8,7 +8,7 @@ import { makeShape, SHAPES } from "@/lib/particles/shapes";
  */
 export default function Halftone({
   shape,
-  count = 2600,
+  count = 1600,
   turn = 0.6,
   tilt = 0.35,
   className = "",

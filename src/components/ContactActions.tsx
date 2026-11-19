@@ -4,7 +4,7 @@ import { useState } from "react";
 import MagneticButton from "./MagneticButton";
 import { person } from "@/data/site";
 
-/** The three buttons in Contact: email (main), copy email, download CV. */
+/** The three buttons in Contact: email (main), copy email, download CV. "Copied" is announced to screen readers. */
 export default function ContactActions() {
   const [copyLabel, setCopyLabel] = useState("Copy email");
 
@@ -13,7 +13,7 @@ export default function ContactActions() {
     try {
       await navigator.clipboard.writeText(person.email);
     } catch {
-      label = "Copy failed, use the button";
+      label = "Couldn't copy";
     }
     setCopyLabel(label);
     window.setTimeout(() => setCopyLabel("Copy email"), 2000);
@@ -27,7 +27,7 @@ export default function ContactActions() {
         </a>
       </MagneticButton>
       <button type="button" className="cta-ghost" onClick={copyEmail}>
-        {copyLabel}
+        <span aria-live="polite">{copyLabel}</span>
       </button>
       <a href={person.cvPath} download={person.cvFileName} className="cta-ghost">
         Download CV

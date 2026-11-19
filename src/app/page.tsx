@@ -6,7 +6,6 @@ import Big, { Kicker } from "@/components/film/Big";
 import ProjectOverlay, { OpenProjectButton } from "@/components/film/ProjectOverlay";
 import Snap from "@/components/film/Snap";
 import ContactActions from "@/components/ContactActions";
-import LocalClock from "@/components/LocalClock";
 import { about, contact, hero, path, person, skills, socials, work } from "@/data/site";
 import { projects } from "@/data/projects";
 import { aboutFilm, contactFilm, intro, pathFilm, skillsFilm, workFilm, type Shot } from "@/data/film";
@@ -31,15 +30,14 @@ export default function Home() {
       <ProjectOverlay />
       <Snap />
 
-      <main className="film">
+      <main id="content" tabIndex={-1} className="film">
         <h1 className="sr-only">
           {person.name} ({person.nickname}): {hero.sub}
         </h1>
 
         {/* 01 — Intro ------------------------------------------------------ */}
-        <Scene id="top" label="Intro" first stepVh={150} shots={[{ palette: "intro", shape: "word", side: "center", spin: 0, tilt: 0.1 }]}>
+        <Scene id="top" label="Intro" first stepVh={150} shots={[{ palette: "intro", shape: "word", side: "center", spin: 0, tilt: 0, still: true }]}>
           <div className="lay lay-intro">
-            <Kicker className="intro-tag">{intro.tag}</Kicker>
             <div className="intro-top" data-a="lines" data-drift="2">
               <Big as="p" lines={intro.top} />
             </div>
@@ -48,19 +46,6 @@ export default function Home() {
             </div>
             <p className="intro-lede" data-a="fade">
               {hero.lede}
-            </p>
-            <ul className="callouts">
-              {intro.callouts.map((c, i) => (
-                <li key={c.label} className={`callout c${i + 1}`} data-a="fade">
-                  <i aria-hidden />
-                  <b>{c.clock ? <LocalClock /> : c.value}</b>
-                  <span>{c.clock ? `${c.value}, ${c.label}` : c.label}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="intro-hint" data-a="fade">
-              <span>{intro.hint}</span>
-              <span className="hint-line" aria-hidden />
             </p>
           </div>
         </Scene>

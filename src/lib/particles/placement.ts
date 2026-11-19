@@ -14,7 +14,7 @@ export type Rect = { left: number; top: number; right: number; bottom: number };
 export type Extent = { hx: number; hy: number };
 
 /** Gap kept between the shape and any word, in px. */
-const MARGIN = 28;
+const MARGIN = 18;
 /** Near points are drawn bigger (perspective); leave room for that. */
 const PERSPECTIVE = 1.12;
 
@@ -23,15 +23,15 @@ const PERSPECTIVE = 1.12;
  * horizontal reach is the farthest point from that axis. Its vertical reach
  * depends on how far it's tilted towards you.
  */
-export function shapeExtent(points: Float32Array, tilt: number): Extent {
+export function shapeExtent(points: Float32Array, tilt: number, wobble = 0.2): Extent {
   let r = 0;
   let y = 0;
   for (let i = 0; i < points.length; i += 3) {
     r = Math.max(r, Math.hypot(points[i], points[i + 2]));
     y = Math.max(y, Math.abs(points[i + 1]));
   }
-  // The mouse adds up to about 0.2 rad of extra tilt.
-  const t = Math.abs(tilt) + 0.2;
+  // The mouse adds up to about `wobble` rad of extra tilt (none for still shapes).
+  const t = Math.abs(tilt) + wobble;
   return {
     hx: r * PERSPECTIVE,
     hy: (y * Math.cos(Math.min(t, Math.PI / 2)) + r * Math.sin(Math.min(t, Math.PI / 2))) * PERSPECTIVE,
@@ -52,6 +52,8 @@ export function findSpot(
   view: { w: number; h: number },
   prefer: { x: number; y: number },
   cap: number,
+  /** How much of the shape must stay on screen (0 to 1). */
+  minOnScreen = 0.6,
 ) {
   const boxes = obstacles
     .filter((o) => o.right > o.left && o.bottom > o.top)
@@ -66,9 +68,9 @@ export function findSpot(
   const steps = 40;
   for (let i = 0; i <= steps; i++) {
     // Centres can sit a little past the edges, so shapes can bleed off.
-    const cx = view.w * (-0.04 + (1.08 * i) / steps);
+    const cx = view.w * (-0.1 + (1.2 * i) / steps);
     for (let j = 0; j <= steps; j++) {
-      const cy = view.h * (0.06 + (0.88 * j) / steps);
+      const cy = view.h * (0.02 + (0.96 * j) / steps);
       let s = cap;
       for (const b of boxes) {
         const dx = Math.abs(cx - b.x) - b.w;
@@ -85,7 +87,7 @@ export function findSpot(
       const visible = Math.max(0, visibleX) * Math.max(0, visibleY);
       const area = 4 * ext.hx * ext.hy * s * s;
       const onScreen = area > 0 ? visible / area : 0;
-      if (onScreen < 0.78) continue;
+      if (onScreen < minOnScreen) continue;
       const dist = Math.hypot((cx - prefer.x) / view.w, (cy - prefer.y) / view.h);
       const score = s * (1 - 0.18 * dist) * (0.7 + 0.3 * onScreen);
       if (score > best.score) best = { cx, cy, s, score };
