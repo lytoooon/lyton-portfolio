@@ -67,6 +67,7 @@ export default function Scene({
     const show = { opacity: 1, attr: { "data-live": "true" } };
     const hide = { opacity: 0, attr: { "data-live": "false" } };
 
+    let stopIntro = () => {};
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         defaults: { ease: "none" },
@@ -79,7 +80,7 @@ export default function Scene({
         drift(tl, step, k);
         if (openOnLoad) {
           gsap.set(step, show);
-          playOnLoad(gsap, step);
+          stopIntro = playOnLoad(gsap, step);
         } else {
           gsap.set(step, hide);
           tl.set(step, show, k + 0.001);
@@ -94,7 +95,10 @@ export default function Scene({
       tl.set({}, {}, K);
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      stopIntro();
+      ctx.revert();
+    };
   }, [K, first, last]);
 
   return (

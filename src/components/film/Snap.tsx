@@ -4,6 +4,21 @@ import { useEffect } from "react";
 import { getLenis, scrollToY } from "@/components/SmoothScroll";
 import { prefersReducedMotion } from "@/lib/motion";
 import { JUMP_SECONDS, STEP_SECONDS } from "@/lib/film/config";
+import { markReady } from "@/lib/film/ready";
+import { getGsap } from "@/lib/gsap";
+
+/** Where you were on the page, kept across a reload. */
+const SAVED_Y = "film:y";
+
+// The film puts the scroll back itself (snapped to a step), so the browser
+// shouldn't. Set as soon as this file loads, before the page finishes loading.
+if (typeof window !== "undefined") {
+  try {
+    history.scrollRestoration = "manual";
+  } catch {
+    // Not supported: the restore below still runs.
+  }
+}
 
 /** Same curve as the particles' morph, so words and shapes arrive together. */
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -23,10 +38,16 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
  *
  * Keyboard users who Tab into a step that isn't on screen are glided to it,
  * so what has focus is always what you see.
+ *
+ * On a reload it puts you back on the step you were on (or the #section in
+ * the address), exactly on its stop, so nothing is left half-animated.
  */
 export default function Snap() {
   useEffect(() => {
-    if (prefersReducedMotion()) return;
+    if (prefersReducedMotion()) {
+      markReady("scroll");
+      return;
+    }
 
     const stops = () => {
       const ys = Array.from(document.querySelectorAll<HTMLElement>("[data-shot]")).map(
@@ -44,6 +65,44 @@ export default function Snap() {
       });
       return best;
     };
+
+    // -- Back to where you were, snapped to the nearest stop.
+    const restore = () => {
+      let y = 0;
+      const hash = window.location.hash.slice(1);
+      const section = hash ? document.getElementById(hash) : null;
+      if (section) {
+        const marker = section.querySelector("[data-shot]") ?? section;
+        y = marker.getBoundingClientRect().top + window.scrollY;
+      } else {
+        try {
+          y = Number(sessionStorage.getItem(SAVED_Y)) || 0;
+        } catch {
+          // Storage blocked (private mode): start at the top.
+        }
+      }
+      const ys = stops();
+      const best = ys.reduce((b, s, i) => (Math.abs(s - y) < Math.abs(ys[b] - y) ? i : b), 0);
+      const to = ys[best] ?? 0;
+      getLenis()?.scrollTo(to, { immediate: true, force: true });
+      window.scrollTo(0, to);
+      // Jump every scene's timeline straight to this spot instead of letting
+      // it catch up (it would play every scene in between).
+      const { ScrollTrigger } = getGsap();
+      ScrollTrigger.update();
+      ScrollTrigger.getAll().forEach((t) => t.getTween()?.progress(1));
+      markReady("scroll");
+    };
+    const save = () => {
+      try {
+        sessionStorage.setItem(SAVED_Y, String(window.scrollY));
+      } catch {
+        // Storage blocked: nothing to remember.
+      }
+    };
+    // Wait a frame so every scene has built its timeline.
+    const restoreFrame = requestAnimationFrame(restore);
+    window.addEventListener("pagehide", save);
 
     let busy = false;
     let lastMove = 0;
@@ -174,6 +233,8 @@ export default function Snap() {
     window.addEventListener("keydown", onKey);
     document.addEventListener("focusin", onFocus);
     return () => {
+      cancelAnimationFrame(restoreFrame);
+      window.removeEventListener("pagehide", save);
       document.removeEventListener("focusin", onFocus);
       window.removeEventListener("wheel", onWheel, opts);
       window.removeEventListener("touchstart", onTouchStart, opts);

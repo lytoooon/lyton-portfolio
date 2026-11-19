@@ -13,6 +13,7 @@ import { getQuality } from "@/lib/film/quality";
 import { hexToRgb } from "@/lib/film/color";
 import { createWipe } from "@/lib/film/wipe";
 import { extentOf, measureObstacles, placeShot } from "@/lib/film/layout";
+import { afterLoader, isLoading, markReady } from "@/lib/film/ready";
 
 /** Shapes that are mostly flat: they sway to face you instead of spinning edge-on. */
 const FLAT = new Set<Shot["shape"]>(["word", "cursor", "gears", "katana"]);
@@ -125,8 +126,9 @@ export default function Stage() {
       const now = performance.now();
       const dt = Math.min(0.1, (now - lastTime) / 1000);
       lastTime = now;
-      // Ease towards the scroll position at the same speed whatever the frame rate.
-      current += (target - current) * (reduced ? 1 : 1 - Math.pow(PARTICLE_FOLLOW, dt));
+      // Ease towards the scroll position at the same speed whatever the frame
+      // rate. Behind the loading screen, jump: nobody should see it catch up.
+      current += (target - current) * (reduced || isLoading() ? 1 : 1 - Math.pow(PARTICLE_FOLLOW, dt));
       if (Math.abs(target - current) < 0.0004) current = target;
       engine?.setPosition(current);
 
@@ -169,7 +171,9 @@ export default function Stage() {
     };
     measure();
     engine?.setKeyframes(keyframes());
-    engine?.playIntro(reduced);
+    // The particles fly in once the loading screen has gone.
+    engine?.playIntro(true);
+    const cancelIntro = afterLoader(() => engine?.playIntro(reduced));
     engine?.setPosition(current);
     engine?.startLoop();
     gsap.ticker.add(paint);
@@ -184,7 +188,7 @@ export default function Stage() {
         cache.set("word", wordShape(count, makeRng(42), person.nickname.toUpperCase(), "'Anybody Variable', Impact, sans-serif"));
         measure();
         engine?.setKeyframes(keyframes());
-        engine?.playIntro(reduced);
+        markReady("stage");
       });
 
     // -- Pause the particles whenever nobody can see them: another tab, or a
@@ -211,6 +215,7 @@ export default function Stage() {
 
     return () => {
       cancelled = true;
+      cancelIntro();
       gsap.ticker.remove(paint);
       overlayWatch.disconnect();
       window.clearTimeout(resizeTimer);

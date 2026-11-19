@@ -16,6 +16,7 @@
 import type { getGsap } from "@/lib/gsap";
 import { FORM_BLUR, IN_END, TEXT_BLOCK } from "./config";
 import { getQuality } from "./quality";
+import { afterLoader } from "./ready";
 
 type Gsap = ReturnType<typeof getGsap>["gsap"];
 export type Timeline = ReturnType<Gsap["timeline"]>;
@@ -80,8 +81,10 @@ function pixelCover(el: HTMLElement): Pixels {
       cover.style.visibility = p >= 1 ? "hidden" : "visible";
       if (!ctx || !image || p >= 1 || p === drawn) return;
       drawn = p;
-      // Stage.tsx keeps the current background colour on <html> as --bg-now.
-      const hex = document.documentElement.style.getPropertyValue("--bg-now") || "#000000";
+      // Stage.tsx keeps the current background colour on <html> as --bg-now
+      // (before it runs, the stylesheet's starting value is used).
+      const root = document.documentElement;
+      const hex = root.style.getPropertyValue("--bg-now") || getComputedStyle(root).getPropertyValue("--bg-now");
       const n = parseInt(hex.trim().replace("#", ""), 16) || 0;
       const d = image.data;
       for (let i = 0; i < order.length; i++) {
@@ -190,10 +193,13 @@ export function drift(tl: Timeline, step: HTMLElement, k: number) {
   });
 }
 
-/** The opening step plays on page load (in seconds), not on scroll. */
+/**
+ * The opening step plays in seconds, not on scroll, once the loading screen
+ * has gone. Returns a function that cancels it.
+ */
 export function playOnLoad(gsap: Gsap, step: HTMLElement) {
   const { lines, fades, rules, kickers } = parts(step);
-  const tl = gsap.timeline({ delay: 0.5 });
+  const tl = gsap.timeline({ paused: true, delay: 0.2 });
   tl.fromTo(
     lines,
     { autoAlpha: 0, filter: blurred(), "--w": widthFrom },
@@ -202,4 +208,9 @@ export function playOnLoad(gsap: Gsap, step: HTMLElement) {
   kickers.forEach((k) => decodeTween(tl, k, 0, 1, 0.3, 1));
   rules.forEach((el) => tl.fromTo(el, { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 1.2, ease: "expo.inOut" }, 0.4));
   fades.forEach((el, i) => pixelTween(tl, el, 0, 1, 1 + i * 0.12, 1));
+  const cancel = afterLoader(() => tl.play());
+  return () => {
+    cancel();
+    tl.kill();
+  };
 }

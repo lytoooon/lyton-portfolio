@@ -9,6 +9,7 @@ import "@fontsource-variable/anybody/wdth-italic.css";
 import "@fontsource-variable/martian-mono/wdth.css";
 import "./globals.css";
 import CustomCursor from "@/components/CustomCursor";
+import Loader from "@/components/Loader";
 import SmoothScroll from "@/components/SmoothScroll";
 import { person } from "@/data/site";
 import { brand, jsonLdScript, keywords, siteDescription, siteJsonLd, siteTitle } from "@/lib/seo";
@@ -50,9 +51,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Without JavaScript the film can't play: show every step as a normal page. */}
+        {/* Without JavaScript the film can't play and nothing would close the
+            loading screen: hide it and show every step as a normal page. */}
         <noscript>
-          <style>{`.scene{height:auto!important}.frame{position:relative}.step{position:relative;min-height:100vh;opacity:1}.step :is(a,button){pointer-events:auto}.tail{display:none}`}</style>
+          <style>{`.loader{display:none!important}html,body{overflow:auto!important}.scene{height:auto!important}.frame{position:relative}.step{position:relative;min-height:100vh;opacity:1}.step :is(a,button){pointer-events:auto}.tail{display:none}`}</style>
         </noscript>
       </head>
       <body className="antialiased">
@@ -60,6 +62,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(siteJsonLd())} />
+        <Loader />
         <SmoothScroll />
         <CustomCursor />
         {children}

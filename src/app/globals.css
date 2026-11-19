@@ -82,6 +82,63 @@ button {
   outline-offset: 4px;
 }
 
+/* The loading screen (Loader.tsx). Up from the very first paint; it fades
+   once Loader.tsx sets <html data-loading="false">. Without JavaScript the
+   <noscript> styles in layout.tsx hide it. */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--bg-now);
+  color: var(--fg-now);
+  transition:
+    opacity 0.6s var(--ease-out),
+    visibility 0s 0.6s;
+}
+
+html[data-loading="false"] .loader {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader-name {
+  font-family: var(--font-display-family);
+  font-size: clamp(40px, 7vw, 96px);
+  font-stretch: 150%;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.loader-bar {
+  position: relative;
+  width: min(220px, 50vw);
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--fg-now) 18%, transparent);
+}
+
+.loader-bar span {
+  position: absolute;
+  inset: 0;
+  background: var(--fg-now);
+  transform-origin: 0 50%;
+  transition: transform 0.5s var(--ease-out);
+}
+
+/* No scrolling behind the loading screen. */
+html:not([data-loading="false"]),
+html:not([data-loading="false"]) body {
+  overflow: hidden;
+}
+
 /* "Skip to content": hidden until a keyboard user tabs to it. */
 .skip-link {
   position: fixed;
