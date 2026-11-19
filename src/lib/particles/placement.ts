@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------
 // PLACING A SHAPE SO IT NEVER COVERS THE WORDS
-// For every step, the page measures the boxes of its words (and the fixed
-// interface: name, buttons, scene list). This file then finds the spot on
-// screen where the shape can be biggest without touching any of those boxes.
+// For every step, the page measures the boxes of its words (see
+// lib/film/layout.ts). This file then finds the spot on screen where the
+// shape can be biggest without touching any of those boxes.
 //
 // The shape is treated as a box too: its widest and tallest reach once it's
 // rotated, plus a safety margin for perspective (near points look bigger).
@@ -67,10 +67,10 @@ export function findSpot(
   let best = { cx: prefer.x, cy: prefer.y, s: 0, score: -1 };
   const steps = 40;
   for (let i = 0; i <= steps; i++) {
-    // Centres can sit a little past the edges, so shapes can bleed off.
-    const cx = view.w * (-0.1 + (1.2 * i) / steps);
+    // Centres can sit past the edges, so big shapes can bleed off.
+    const cx = view.w * (-0.25 + (1.5 * i) / steps);
     for (let j = 0; j <= steps; j++) {
-      const cy = view.h * (0.02 + (0.96 * j) / steps);
+      const cy = view.h * (-0.15 + (1.3 * j) / steps);
       let s = cap;
       for (const b of boxes) {
         const dx = Math.abs(cx - b.x) - b.w;

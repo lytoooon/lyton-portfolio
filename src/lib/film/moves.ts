@@ -55,7 +55,15 @@ const ruleOrigin = (el: HTMLElement, entering: boolean) => {
 
 type Pixels = { draw: (p: number) => void; p: number };
 
-function pixelCover(el: HTMLElement): Pixels {
+/**
+ * What each canvas shows right now. An element's arrival and exit both draw
+ * on its one canvas, so "already drawn" must be tracked per canvas, not per
+ * tween, or one could skip a redraw and leave the other's picture showing.
+ */
+const lastDrawn = new WeakMap<HTMLCanvasElement, { by: Pixels; p: number }>();
+
+/** `start` is where the tween begins: the cover must hold that before it plays (see pixelTween). */
+function pixelCover(el: HTMLElement, start: number): Pixels {
   let canvas = el.querySelector<HTMLCanvasElement>(":scope > canvas.pixel-cover");
   if (!canvas) {
     canvas = document.createElement("canvas");
@@ -66,21 +74,25 @@ function pixelCover(el: HTMLElement): Pixels {
   const cover = canvas;
   const cols = Math.max(1, Math.ceil(el.offsetWidth / TEXT_BLOCK));
   const rows = Math.max(1, Math.ceil(el.offsetHeight / TEXT_BLOCK));
-  cover.width = cols;
-  cover.height = rows;
+  if (cover.width !== cols || cover.height !== rows) {
+    cover.width = cols;
+    cover.height = rows;
+    lastDrawn.delete(cover);
+  }
   const ctx = cover.getContext("2d");
   const order = Float32Array.from({ length: cols * rows }, () => Math.random());
   const image = ctx?.createImageData(cols, rows);
-  let drawn = -1;
 
   const state: Pixels = {
-    p: 0,
+    p: start,
     draw(p: number) {
       state.p = p;
       // Fully revealed: hide the canvas (crisper text, no seams), skip the work.
       cover.style.visibility = p >= 1 ? "hidden" : "visible";
-      if (!ctx || !image || p >= 1 || p === drawn) return;
-      drawn = p;
+      if (!ctx || !image || p >= 1) return;
+      const last = lastDrawn.get(cover);
+      if (last && last.by === state && last.p === p) return;
+      lastDrawn.set(cover, { by: state, p });
       // Stage.tsx keeps the current background colour on <html> as --bg-now
       // (before it runs, the stylesheet's starting value is used).
       const root = document.documentElement;
@@ -101,7 +113,11 @@ function pixelCover(el: HTMLElement): Pixels {
 }
 
 function pixelTween(tl: Timeline, el: HTMLElement, from: number, to: number, at: number, duration: number) {
-  const cover = pixelCover(el);
+  // The cover starts at `from`. This matters when scrolling back up: a
+  // scrubbed tween rewound past its start puts back the value it found when
+  // it began, so that value must be `from` (fully clear, for an exit), or
+  // the words stay covered.
+  const cover = pixelCover(el, from);
   // Only the reveal sets the starting state; the exit waits its turn.
   const entering = to > from;
   if (entering) cover.draw(from);

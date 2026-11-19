@@ -1,8 +1,10 @@
 // -----------------------------------------------------------------------
 // WHERE EACH SHAPE SITS
-// For every step, measures the boxes of its words (and the fixed interface:
-// name, "Let's talk", scene list), then asks placement.ts for the biggest
-// spot where the shape fits without touching any of them.
+// For every step, measures the boxes of its words, then asks placement.ts
+// for the biggest spot where the shape fits without touching any of them.
+// Shapes may run off the edges and pass behind the fixed interface (name,
+// "Let's talk", scene list), which sits on top; the still intro word keeps
+// clear of that too, so it reads whole.
 // -----------------------------------------------------------------------
 
 import type { Shot } from "@/data/film";
@@ -11,12 +13,16 @@ import { findSpot, shapeExtent, type Extent, type Rect } from "@/lib/particles/p
 /** Everything that counts as words: shapes must keep clear of these. */
 const WORDS =
   ".ln-i, .kicker, .sub, .body, .facts, .tags, .actions, .contact-actions, .credits, .rule, .intro-lede, .ticker";
-/** The fixed interface around the film, also kept clear. */
+/** The fixed interface around the film (only the still intro word avoids it). */
 const CHROME = ".brand, .topright, .rail";
 
-/** How much of the screen a shape may fill at most. */
-const MAX_HEIGHT = 0.6;
-const MAX_WIDTH = { still: 0.49, narrow: 0.5, wide: 0.44 };
+/** How big a shape may get, as a share of the screen (half-size: 0.5 = full screen). */
+const MAX_HEIGHT = 1;
+const MAX_WIDTH = { still: 0.49, narrow: 0.75, wide: 0.6 };
+/** How much of a moving shape must stay on screen; the rest may bleed off the edges. */
+const MIN_ON_SCREEN = 0.45;
+
+export type Obstacles = { words: Rect[]; chrome: Rect[] };
 
 /** The box of an element's actual text (a block element is often wider than its words). */
 function boxOf(el: Element): Rect {
@@ -32,17 +38,16 @@ function boxOf(el: Element): Rect {
  * with every animation switched off (the "measuring" class in globals.css),
  * added and removed before the browser paints, so it's never seen.
  */
-export function measureObstacles(markers: HTMLElement[]): Rect[][] {
+export function measureObstacles(markers: HTMLElement[]): Obstacles[] {
   const root = document.documentElement;
   root.classList.add("measuring");
   const chrome = Array.from(document.querySelectorAll(CHROME)).map((el) => el.getBoundingClientRect());
   const result = markers.map((m) => {
     const section = m.closest("section");
-    if (!section) return chrome;
-    const index = Array.from(section.querySelectorAll(":scope > [data-shot]")).indexOf(m);
-    const step = section.querySelectorAll(":scope > .frame > .step")[index];
-    if (!step) return chrome;
-    return [...Array.from(step.querySelectorAll(WORDS)).map(boxOf), ...chrome];
+    const index = section ? Array.from(section.querySelectorAll(":scope > [data-shot]")).indexOf(m) : -1;
+    const step = section?.querySelectorAll(":scope > .frame > .step")[index];
+    const words = step ? Array.from(step.querySelectorAll(WORDS)).map(boxOf) : [];
+    return { words, chrome };
   });
   root.classList.remove("measuring");
   return result;
@@ -67,7 +72,7 @@ export function extentOf(points: Float32Array, shot: Shot): Extent {
 export function placeShot(
   shot: Shot,
   ext: Extent,
-  obstacles: Rect[],
+  obstacles: Obstacles,
   view: { w: number; h: number; narrow: boolean },
   half: { h: number },
 ) {
@@ -75,7 +80,8 @@ export function placeShot(
   const across = shot.still ? MAX_WIDTH.still : view.narrow ? MAX_WIDTH.narrow : MAX_WIDTH.wide;
   const cap = Math.min((h * MAX_HEIGHT) / ext.hy, (w * across) / ext.hx) * (shot.size ?? 1);
   // The still intro word stays whole on screen; other shapes may bleed off the edges.
-  const spot = findSpot(obstacles, ext, { w, h }, preferred(shot.side, w, h), cap, shot.still ? 0.99 : 0.6);
+  const avoid = shot.still ? [...obstacles.words, ...obstacles.chrome] : obstacles.words;
+  const spot = findSpot(avoid, ext, { w, h }, preferred(shot.side, w, h), cap, shot.still ? 0.99 : MIN_ON_SCREEN);
   const pxPerUnit = h / 2 / half.h;
   return {
     x: (spot.cx - w / 2) / pxPerUnit,

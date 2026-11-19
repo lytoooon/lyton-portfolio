@@ -123,5 +123,5 @@ export const path: { heading: string; steps: PathStep[] } = {
 export const contact = {
   heading: "Losing time or money somewhere in your business?",
   lead: "Tell me where. I'll tell you whether I can help.",
-  small: "Email is the quickest way to reach me. I usually reply within a couple of days.",
+  small: "Email is the quickest way to reach me. I reply within 24 hours.",
 } as const;

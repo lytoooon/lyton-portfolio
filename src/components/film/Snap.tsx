@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { getLenis, scrollToY } from "@/components/SmoothScroll";
 import { prefersReducedMotion } from "@/lib/motion";
 import { JUMP_SECONDS, STEP_SECONDS } from "@/lib/film/config";
-import { markReady } from "@/lib/film/ready";
+import { afterLoader, isLoading, markReady } from "@/lib/film/ready";
 import { getGsap } from "@/lib/gsap";
 
 /** Where you were on the page, kept across a reload. */
@@ -67,6 +67,27 @@ export default function Snap() {
     };
 
     // -- Back to where you were, snapped to the nearest stop.
+    let pinned = -1;
+    const jumpTo = (y: number) => {
+      getLenis()?.scrollTo(y, { immediate: true, force: true });
+      window.scrollTo(0, y);
+      // Jump every scene's timeline straight to this spot instead of letting
+      // it catch up (it would play every scene in between).
+      const { ScrollTrigger } = getGsap();
+      ScrollTrigger.update();
+      ScrollTrigger.getAll().forEach((t) => t.getTween()?.progress(1));
+    };
+    // The browser jumps to a #section's top edge on its own, sometimes after
+    // the restore below. Hold the chosen stop until the loading screen goes.
+    const hold = () => {
+      if (pinned >= 0 && isLoading() && Math.abs(window.scrollY - pinned) > 1) jumpTo(pinned);
+    };
+    window.addEventListener("scroll", hold, { passive: true });
+    const stopHolding = afterLoader(() => {
+      hold();
+      pinned = -1;
+      window.removeEventListener("scroll", hold);
+    });
     const restore = () => {
       let y = 0;
       const hash = window.location.hash.slice(1);
@@ -84,13 +105,8 @@ export default function Snap() {
       const ys = stops();
       const best = ys.reduce((b, s, i) => (Math.abs(s - y) < Math.abs(ys[b] - y) ? i : b), 0);
       const to = ys[best] ?? 0;
-      getLenis()?.scrollTo(to, { immediate: true, force: true });
-      window.scrollTo(0, to);
-      // Jump every scene's timeline straight to this spot instead of letting
-      // it catch up (it would play every scene in between).
-      const { ScrollTrigger } = getGsap();
-      ScrollTrigger.update();
-      ScrollTrigger.getAll().forEach((t) => t.getTween()?.progress(1));
+      pinned = to;
+      jumpTo(to);
       markReady("scroll");
     };
     const save = () => {
@@ -234,6 +250,8 @@ export default function Snap() {
     document.addEventListener("focusin", onFocus);
     return () => {
       cancelAnimationFrame(restoreFrame);
+      stopHolding();
+      window.removeEventListener("scroll", hold);
       window.removeEventListener("pagehide", save);
       document.removeEventListener("focusin", onFocus);
       window.removeEventListener("wheel", onWheel, opts);

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { ParticleEngine, type Keyframe } from "@/lib/particles/engine";
 import { cloud, makeRng, makeShape, wordShape, SHAPES } from "@/lib/particles/shapes";
-import type { Extent, Rect } from "@/lib/particles/placement";
+import type { Extent } from "@/lib/particles/placement";
 import { palettes, type Shot } from "@/data/film";
 import { person } from "@/data/site";
 import { getGsap } from "@/lib/gsap";
@@ -12,7 +12,7 @@ import { DUST, PARTICLE_FOLLOW, WIPE_CELL } from "@/lib/film/config";
 import { getQuality } from "@/lib/film/quality";
 import { hexToRgb } from "@/lib/film/color";
 import { createWipe } from "@/lib/film/wipe";
-import { extentOf, measureObstacles, placeShot } from "@/lib/film/layout";
+import { extentOf, measureObstacles, placeShot, type Obstacles } from "@/lib/film/layout";
 import { afterLoader, isLoading, markReady } from "@/lib/film/ready";
 
 /** Shapes that are mostly flat: they sway to face you instead of spinning edge-on. */
@@ -59,7 +59,7 @@ export default function Stage() {
     const markers = Array.from(document.querySelectorAll<HTMLElement>("[data-shot]"));
     const shots: Shot[] = markers.map((m) => JSON.parse(m.dataset.shot ?? "{}"));
     let positions: number[] = [];
-    let obstacles: Rect[][] = [];
+    let obstacles: Obstacles[] = [];
 
     // -- Shapes: built once each, shared by shots that use the same one.
     // The word needs its font loaded first, so it starts as a cloud.
@@ -85,7 +85,7 @@ export default function Stage() {
         const pal = palettes[shot.palette];
         return {
           shape: shapeFor(shot.shape),
-          ...placeShot(shot, extentFor(shot), obstacles[k] ?? [], view, half),
+          ...placeShot(shot, extentFor(shot), obstacles[k] ?? { words: [], chrome: [] }, view, half),
           spin: shot.spin ?? (FLAT.has(shot.shape) ? 0 : 1),
           tilt: shot.tilt ?? 0.18,
           turn: shot.turn ?? 0,
@@ -116,7 +116,7 @@ export default function Stage() {
     // -- Every frame: follow the scroll, colour the page, move the particles.
     let current = positionFor(window.scrollY);
     let lastTime = performance.now();
-    let lastFg = "";
+    let lastPalette: (typeof palettes)[keyof typeof palettes] | null = null;
     let lastBg = "";
     let lastY = -1;
 
@@ -153,12 +153,13 @@ export default function Stage() {
 
       // Text colours flip halfway through the wipe.
       const pal = f < 0.5 ? from : to;
-      if (pal.fg !== lastFg) {
+      // Compare whole palettes: two scenes can share a text colour but not a background.
+      if (pal !== lastPalette) {
         root.style.setProperty("--fg-now", pal.fg);
         root.style.setProperty("--bg-now", pal.bg);
         root.style.setProperty("--accent-now", pal.accent);
         root.style.setProperty("--ink-now", pal.ink);
-        lastFg = pal.fg;
+        lastPalette = pal;
       }
     };
 
@@ -173,7 +174,12 @@ export default function Stage() {
     engine?.setKeyframes(keyframes());
     // The particles fly in once the loading screen has gone.
     engine?.playIntro(true);
-    const cancelIntro = afterLoader(() => engine?.playIntro(reduced));
+    const cancelIntro = afterLoader(() => {
+      // Start exactly where the page is, never easing in from somewhere else.
+      current = positionFor(window.scrollY);
+      paint();
+      engine?.playIntro(reduced);
+    });
     engine?.setPosition(current);
     engine?.startLoop();
     gsap.ticker.add(paint);

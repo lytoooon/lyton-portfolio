@@ -49,8 +49,13 @@ export default function Loader() {
       if (closed) return;
       closed = true;
       setProgress(1);
-      root.dataset.loading = "false";
-      window.dispatchEvent(new Event(LOADER_DONE));
+      // Two frames' grace so the page has drawn itself in its final place.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          root.dataset.loading = "false";
+          window.dispatchEvent(new Event(LOADER_DONE));
+        }),
+      );
     };
     const timeout = window.setTimeout(close, MAX_MS);
     Promise.all(waits).then(() => {
