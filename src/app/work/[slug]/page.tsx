@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import NavBar from "@/components/NavBar";
+import Big from "@/components/film/Big";
+import Gallery from "@/components/film/Gallery";
+import { paletteStyle } from "@/lib/palette-style";
 import Footer from "@/components/Footer";
 import { getProject, nextProject, projects } from "@/data/projects";
 import { person } from "@/data/site";
@@ -50,73 +53,62 @@ export default async function CaseStudy({ params }: { params: Promise<Params> })
   ];
 
   return (
-    <>
-      <NavBar variant="page" />
+    <div className="case themed" style={paletteStyle(project.palette)}>
+      <NavBar />
       <main>
-        <div className="wrap pt-40 sm:pt-48">
-          <p className="text-sm text-muted">{project.label}</p>
-          <h1 className="mt-3 font-display text-[clamp(3.25rem,11vw,9.5rem)] font-extrabold leading-[0.9] tracking-[-0.04em] text-fg">
-            {project.name}
-          </h1>
-          <p className="mt-8 max-w-[44ch] font-display text-[clamp(1.35rem,2.4vw,2rem)] font-medium leading-snug tracking-tight">
-            {project.intro}
-          </p>
+        <div className="case-hero">
+          <p className="kicker">{project.label}</p>
+          <Big as="h1" lines={project.title} className="case-title" />
+          <div className="overlay-intro">
+            <p className="overlay-lead">{project.intro}</p>
+            <dl className="meta">
+              {meta.map((item) => (
+                <div key={item.label}>
+                  <dt>{item.label}</dt>
+                  <dd>{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
 
-          <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-6 border-t border-line pt-6 sm:grid-cols-4">
-            {meta.map((item) => (
-              <div key={item.label}>
-                <dt className="text-sm text-muted">{item.label}</dt>
-                <dd className="mt-1 text-base leading-snug">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <div className="mt-10 flex flex-wrap items-center gap-3">
+          <div className="overlay-links">
             {project.liveHref && (
-              <a href={project.liveHref} target="_blank" rel="noreferrer noopener" className="cta cta-lg">
-                Visit the site
+              <a href={project.liveHref} target="_blank" rel="noreferrer noopener" className="pill pill-solid">
+                Visit the site ↗
               </a>
             )}
             {project.repoHref && (
-              <a href={project.repoHref} target="_blank" rel="noreferrer noopener" className="cta-ghost">
-                View on GitHub
+              <a href={project.repoHref} target="_blank" rel="noreferrer noopener" className="pill">
+                View on GitHub ↗
               </a>
             )}
-            {project.repoNote && <span className="text-sm text-muted">{project.repoNote}</span>}
+            {project.repoNote && <span className="kicker">{project.repoNote}</span>}
           </div>
+
+          <Gallery project={project} />
         </div>
 
-        <div className="wrap mt-24 sm:mt-32">
+        <div className="case-body" style={{ marginTop: "12vh" }}>
           {project.sections.map((section) => (
-            <section
-              key={section.heading}
-              className="grid gap-x-6 gap-y-4 border-t border-line py-10 md:grid-cols-12 md:py-14"
-            >
-              <h2 className="font-display text-2xl font-bold tracking-tight md:col-span-4 md:text-3xl">
-                {section.heading}
-              </h2>
-              <div className="space-y-5 md:col-span-7 md:col-start-6">
+            <section key={section.heading} className="case-section">
+              <h2>{section.heading}</h2>
+              <div>
                 {section.body.map((paragraph) => (
-                  <p key={paragraph} className="max-w-[60ch]">
-                    {paragraph}
-                  </p>
+                  <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
             </section>
           ))}
-        </div>
 
-        <div className="wrap mt-16 border-t border-line pt-12 sm:mt-24">
-          <p className="text-sm text-muted">Next case study</p>
-          <Link
-            href={`/work/${next.slug}`}
-            className="mt-2 inline-block font-display text-[clamp(2.25rem,6vw,5rem)] font-extrabold leading-none tracking-[-0.03em] hover:underline hover:decoration-lime hover:decoration-4 hover:underline-offset-8"
-          >
-            {next.name} &rarr;
-          </Link>
+          <div className="case-section" style={{ display: "block" }}>
+            <p className="kicker">Next case study</p>
+            <Link href={`/work/${next.slug}`} className="case-next">
+              {next.name} &rarr;
+            </Link>
+          </div>
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

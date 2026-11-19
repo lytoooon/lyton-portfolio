@@ -2,10 +2,11 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-500.css";
 import "@fontsource/inter/latin-600.css";
-import "@fontsource/bricolage-grotesque/latin-500.css";
-import "@fontsource/bricolage-grotesque/latin-600.css";
-import "@fontsource/bricolage-grotesque/latin-700.css";
-import "@fontsource/bricolage-grotesque/latin-800.css";
+// Anybody is a variable font whose width runs from 50% (tall and squeezed)
+// to 150% (wide). The headlines use that range on purpose.
+import "@fontsource-variable/anybody/wdth.css";
+import "@fontsource-variable/anybody/wdth-italic.css";
+import "@fontsource-variable/martian-mono/wdth.css";
 import "./globals.css";
 import CustomCursor from "@/components/CustomCursor";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fafaf8",
+  themeColor: "#cdfd50",
 };
 
 // Tells search engines who this site is about.

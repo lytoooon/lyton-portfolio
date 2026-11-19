@@ -6,15 +6,41 @@
 // link simply won't show.
 // -----------------------------------------------------------------------
 
+import type { SHAPES } from "@/lib/particles/shapes";
+import type { Line, PaletteKey } from "./film";
+
 export type CaseSection = {
   heading: string;
   /** One string per paragraph. */
   body: string[];
 };
 
+/** A screenshot or photo for the project gallery. */
+export type ProjectImage = {
+  /** Path inside /public, e.g. "/work/sunga/home.png". */
+  src: string;
+  /** Describe what's in the picture, for screen readers and search engines. */
+  alt: string;
+  caption?: string;
+  /** Width and height of the file, so the page doesn't jump while it loads. */
+  width: number;
+  height: number;
+};
+
 export type Project = {
   slug: string;
   name: string;
+  /** How the name is set in the film: one entry per line, w is the font width (50 to 150). */
+  title: Line[];
+  /** The particle shape for this project's scene (see src/lib/particles/shapes.ts). */
+  shape: keyof typeof SHAPES;
+  /** The colours for this project's scene (see src/data/film.ts). */
+  palette: PaletteKey;
+  /**
+   * Real screenshots or photos. Put the files in public/work/<slug>/ and list
+   * them here. They appear in the gallery after the generated cover slides.
+   */
+  images: ProjectImage[];
   /** Shown next to the name in the list, e.g. "UI/UX designer, 2026". */
   label: string;
   year: string;
@@ -35,6 +61,10 @@ export const projects: Project[] = [
   {
     slug: "sunga",
     name: "Sunga",
+    title: [{ text: "Sunga", w: 150 }],
+    shape: "coins",
+    palette: "sunga",
+    images: [],
     label: "UI/UX designer, 2026",
     year: "2026",
     role: "UI/UX designer",
@@ -84,6 +114,13 @@ export const projects: Project[] = [
   {
     slug: "shema-comedy",
     name: "Shema Comedy",
+    title: [
+      { text: "Shema", w: 50, outline: true },
+      { text: "Comedy", w: 120 },
+    ],
+    shape: "microphone",
+    palette: "shema-comedy",
+    images: [],
     label: "Design and build, 2026",
     year: "2026",
     role: "Design and development",
@@ -134,6 +171,10 @@ export const projects: Project[] = [
   {
     slug: "samurai",
     name: "Samurai",
+    title: [{ text: "Samurai", w: 118 }],
+    shape: "katana",
+    palette: "samurai",
+    images: [],
     label: "Concept, 2026",
     year: "2026",
     role: "Design and development",
@@ -174,17 +215,21 @@ export const projects: Project[] = [
   {
     slug: "lyton-me",
     name: "lyton.me",
+    title: [{ text: "lyton.me", w: 104 }],
+    shape: "cursor",
+    palette: "lyton-me",
+    images: [],
     label: "This site, 2026",
     year: "2026",
     role: "Design and development",
     status: "Live",
     summary:
-      "The site you're on. Next.js, with a brush that follows your scroll, and every line of copy in one editable file.",
-    tags: ["Next.js", "TypeScript", "Tailwind CSS", "GSAP"],
+      "The site you're on. It plays like a motion graphics reel: 20,000 particles that rebuild themselves into a new 3D shape for every scene.",
+    tags: ["Next.js", "TypeScript", "WebGL2", "GSAP"],
     repoHref: "https://github.com/lytoooon/lyton-portfolio",
     liveHref: "https://lyton.me",
     intro:
-      "This site went through three versions. The one you're on takes the best parts of the first two.",
+      "This site went through four versions. The one you're on plays like a video you scrub with your scroll wheel instead of a long page.",
     sections: [
       {
         heading: "Version one",
@@ -199,23 +244,29 @@ export const projects: Project[] = [
         ],
       },
       {
-        heading: "This version",
+        heading: "Version three",
         body: [
           "I kept the brush, the left and right layout and the long gaps between sections from version two. The fonts, colours, bottom nav, skill strip and lime buttons come from version one.",
         ],
       },
       {
+        heading: "This version",
+        body: [
+          "Each scene is pinned to the screen and scrolling scrubs through it, like dragging a playhead. The particles form the word LYTON, a globe with a pin on Zambia, gears for automation, a shape for each project, a staircase and a paper plane. Between scenes they scatter and reform, and they move out of the way of your cursor.",
+          "The headlines use one variable font, Anybody, pushed from very narrow to very wide. Each line gets its own width, which is what makes the type feel designed instead of default.",
+        ],
+      },
+      {
         heading: "Decisions",
         body: [
-          "Calmer. Earlier versions had too much moving at once. The brush is the one thing that really moves, and everything else fades in once, slowly.",
-          "Long gaps on purpose. The brush needs room to travel between sections.",
+          "One moving idea per scene. The particles carry the motion; the words slide in, hold still long enough to read, then leave.",
           "One place for content. Text, projects and case studies live in src/data, so changing a sentence never means opening a component. The CV is generated from the same data, so it can't drift out of date.",
         ],
       },
       {
         heading: "How it's built",
         body: [
-          "Next.js with the App Router, TypeScript and Tailwind CSS 4. GSAP and Lenis handle the reveals and the smooth scrolling. The brush is a hand-written canvas animation with no extra library.",
+          "Next.js with the App Router, TypeScript and Tailwind CSS 4. GSAP's ScrollTrigger scrubs each scene and Lenis smooths the scroll. The particles are hand-written WebGL2 with no 3D library: every shape is a list of points, and a shader moves each point from one shape to the next.",
         ],
       },
     ],

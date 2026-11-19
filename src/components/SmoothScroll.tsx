@@ -6,6 +6,19 @@ import Lenis from "lenis";
 import { getGsap } from "@/lib/gsap";
 import { prefersReducedMotion } from "@/lib/motion";
 
+let instance: Lenis | null = null;
+
+/** The running smooth scroller, if there is one (null with reduced motion). */
+export function getLenis() {
+  return instance;
+}
+
+/** Scrolls to a pixel position, smoothly when possible. */
+export function scrollToY(y: number, duration = 1.8) {
+  if (instance) instance.scrollTo(y, { duration });
+  else window.scrollTo({ top: y });
+}
+
 /**
  * Smooth, slightly slow scrolling. It is switched off for anyone who prefers
  * reduced motion, and nothing else on the site depends on it.
@@ -24,6 +37,7 @@ export default function SmoothScroll() {
       easing: (t) => 1 - Math.pow(1 - t, 3),
     });
     lenisRef.current = lenis;
+    instance = lenis;
 
     // Keep GSAP's ScrollTrigger and Lenis on the same clock.
     const tick = (time: number) => lenis.raf(time * 1000);
@@ -47,7 +61,10 @@ export default function SmoothScroll() {
       }
       if (!target) return;
       e.preventDefault();
-      lenis.scrollTo(target as HTMLElement, { duration: 1.6 });
+      // A scene's text is fully on screen at its first marker, not at its top edge.
+      const marker = target.matches("[data-scene]") ? target.querySelector("[data-shot]") : null;
+      const y = (marker ?? target).getBoundingClientRect().top + window.scrollY;
+      lenis.scrollTo(y, { duration: 1.8 });
     };
     document.addEventListener("click", onClick);
 
@@ -56,6 +73,7 @@ export default function SmoothScroll() {
       gsap.ticker.remove(tick);
       lenis.destroy();
       lenisRef.current = null;
+      instance = null;
       document.documentElement.style.scrollBehavior = "";
     };
   }, []);

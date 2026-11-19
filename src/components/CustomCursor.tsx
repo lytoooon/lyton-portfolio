@@ -50,12 +50,12 @@ export default function CustomCursor() {
 
     const onOver = (e: PointerEvent) => {
       if (!isClickable(e)) return;
-      gsap.to(ring, { scale: 2.4, borderColor: "#8fb51a", duration: 0.3, ease: "power3.out" });
+      gsap.to(ring, { scale: 2.4, duration: 0.3, ease: "power3.out" });
       gsap.to(dot, { scale: 0, duration: 0.2 });
     };
     const onOut = (e: PointerEvent) => {
       if (!isClickable(e)) return;
-      gsap.to(ring, { scale: 1, borderColor: "#171513", duration: 0.3, ease: "power3.out" });
+      gsap.to(ring, { scale: 1, duration: 0.3, ease: "power3.out" });
       gsap.to(dot, { scale: 1, duration: 0.2 });
     };
     const onDown = () => gsap.to(ring, { scale: 0.75, duration: 0.15 });
