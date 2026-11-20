@@ -27,7 +27,7 @@ export type PaletteKey =
   | "work"
   | "sunga"
   | "shema-comedy"
-  | "samurai"
+  | "wts"
   | "lyton-me"
   | "path"
   | "contact";
@@ -40,7 +40,7 @@ export const palettes: Record<PaletteKey, Palette> = {
   work: { bg: "#eeebe3", fg: "#11110f", ink: "#11110f", accent: "#2f45ff" },
   sunga: { bg: "#1fe08a", fg: "#062416", ink: "#062416", accent: "#ffffff" },
   "shema-comedy": { bg: "#ff6a13", fg: "#1a0b02", ink: "#1a0b02", accent: "#fff3df" },
-  samurai: { bg: "#ff8fc8", fg: "#1a0610", ink: "#1a0610", accent: "#ffffff" },
+  wts: { bg: "#0b63f6", fg: "#f4f8ff", ink: "#f4f8ff", accent: "#f2d00b" },
   "lyton-me": { bg: "#9f86ff", fg: "#0f0a1f", ink: "#0f0a1f", accent: "#cdfd50" },
   path: { bg: "#ffd400", fg: "#1c1300", ink: "#1c1300", accent: "#ff3d2e" },
   contact: { bg: "#22d3ff", fg: "#03161c", ink: "#03161c", accent: "#ff3d2e" },
@@ -68,6 +68,8 @@ export type Shot = {
   turn?: number;
   /** Holds perfectly still (no turning, no mouse tilt); its points ripple and drift instead. */
   still?: boolean;
+  /** How much of the shape must stay on screen, 0 to 1 (default 0.45). Raise it for detailed shapes. */
+  onScreen?: number;
 };
 
 // A headline is a list of lines. Each line has its own width (50 = squeezed

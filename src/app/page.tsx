@@ -143,8 +143,11 @@ export default function Home() {
               palette: p.palette,
               shape: p.shape,
               side: across[WORK[k + 1]],
-              tilt: p.shape === "coins" ? 0.5 : 0.15,
-              size: p.shape === "katana" ? 1.3 : 1.05,
+              // Coins and the warehouse are seen a little from above; the
+              // warehouse sways around a three-quarter view and stays whole.
+              tilt: p.shape === "coins" ? 0.5 : p.shape === "warehouse" ? 0.42 : 0.15,
+              ...(p.shape === "warehouse" ? { turn: -0.6, onScreen: 0.9 } : {}),
+              size: 1.05,
             })),
           ]}
         >

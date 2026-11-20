@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Smaller, modern image formats for the project galleries.
   images: { formats: ["image/avif", "image/webp"] },
+  // Projects that were taken off the site: old links land on the work section.
+  async redirects() {
+    return [{ source: "/work/samurai", destination: "/#work", permanent: true }];
+  },
   async headers() {
     return [
       {

@@ -16,7 +16,7 @@ import { extentOf, measureObstacles, placeShot, type Obstacles } from "@/lib/fil
 import { afterLoader, isLoading, markReady } from "@/lib/film/ready";
 
 /** Shapes that are mostly flat: they sway to face you instead of spinning edge-on. */
-const FLAT = new Set<Shot["shape"]>(["word", "cursor", "gears", "katana"]);
+const FLAT = new Set<Shot["shape"]>(["word", "cursor", "gears", "warehouse"]);
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);

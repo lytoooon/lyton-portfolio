@@ -455,34 +455,82 @@ function microphone(n: number, rng: Rng) {
   ]);
 }
 
-/** Samurai: a katana with a curved blade, guard and wrapped grip. */
-function katana(n: number, rng: Rng) {
-  const L = 2.6;
-  const blade: Sampler = (r) => {
-    const u = r(); // 0 at the guard, 1 at the tip
-    const width = 0.15 * (1 - Math.pow(u, 6)) + 0.01;
-    const v = r();
-    const curve = 0.22 * u * u;
-    const thick = 0.025 * (1 - v);
-    return [u * L, curve + v * width, (r() < 0.5 ? -1 : 1) * thick];
+/**
+ * WTS: a corner of a warehouse. Two racks of shelves holding boxes, on a
+ * floor grid, with a location pin and ripple marking the shelf you asked for
+ * ("find anything in seconds").
+ */
+function warehouse(n: number, rng: Rng) {
+  const bays = 4;
+  const bay = 0.6;
+  const levels = 4;
+  const levelH = 0.42;
+  const depth = 0.5;
+  const floorY = -0.9;
+  const length = bays * bay;
+  const rows = [-0.55, 0.55]; // z of each rack's centre, with an aisle between
+
+  const frame: [Vec3, Vec3][] = [];
+  const boxes: [number, Sampler][] = [];
+  for (const zc of rows) {
+    const z0 = zc - depth / 2;
+    const z1 = zc + depth / 2;
+    // Uprights at every bay edge, front and back.
+    for (let i = 0; i <= bays; i++) {
+      const x = -length / 2 + i * bay;
+      frame.push([[x, floorY, z0], [x, floorY + levels * levelH, z0]]);
+      frame.push([[x, floorY, z1], [x, floorY + levels * levelH, z1]]);
+    }
+    // Shelf beams at every level, front and back.
+    for (let l = 1; l <= levels; l++) {
+      const y = floorY + l * levelH;
+      frame.push([[-length / 2, y, z0], [length / 2, y, z0]]);
+      frame.push([[-length / 2, y, z1], [length / 2, y, z1]]);
+    }
+    // Boxes on most shelf spots, sized a little differently, some gaps.
+    for (let l = 0; l < levels; l++)
+      for (let i = 0; i < bays; i++) {
+        if (rng() < 0.22) continue;
+        const h = levelH * (0.45 + rng() * 0.35);
+        const w = bay * (0.55 + rng() * 0.25);
+        const x = -length / 2 + (i + 0.5) * bay;
+        const y = floorY + l * levelH + h / 2 + 0.02;
+        boxes.push([w * h, place(boxOutline(w, h, depth * 0.8, 0.2), { t: [x, y, zc] })]);
+      }
+  }
+  const boxWeight = boxes.reduce((sum, [w]) => sum + w, 0);
+  const boxPart: Sampler = (r) => {
+    let pick = r() * boxWeight;
+    let i = 0;
+    while (i < boxes.length - 1 && pick > boxes[i][0]) pick -= boxes[i++][0];
+    return boxes[i][1](r);
   };
-  const edge: Sampler = (r) => {
-    const u = r();
-    return [u * L, 0.22 * u * u, 0];
-  };
-  const grip: Sampler = (r) => {
-    // a cylinder with a crossing diamond wrap
-    const u = r();
-    const x = -0.85 * u - 0.08;
-    const a = r() < 0.6 ? (u * 26 + (r() < 0.5 ? 0 : Math.PI)) % TAU : r() * TAU;
-    return [x, 0.07 + 0.075 * Math.cos(a), 0.075 * Math.sin(a)];
-  };
+
+  // The floor: a light grid.
+  const grid: [Vec3, Vec3][] = [];
+  const fx = length / 2 + 0.4;
+  const fz = 1.25;
+  for (let i = 0; i <= 8; i++) {
+    const x = -fx + (2 * fx * i) / 8;
+    grid.push([[x, floorY, -fz], [x, floorY, fz]]);
+  }
+  for (let i = 0; i <= 6; i++) {
+    const z = -fz + (2 * fz * i) / 6;
+    grid.push([[-fx, floorY, z], [fx, floorY, z]]);
+  }
+
+  // The pin, floating over a shelf on the front rack, and its ripple on the floor.
+  const pinX = bay * 0.5;
+  const pinZ = rows[1];
+  const pinY = floorY + levels * levelH + 0.55;
   return build(n, rng, [
-    [46, blade],
-    [8, edge],
-    [14, place(cylinder(0.24, 0.05), { rz: Math.PI / 2, t: [-0.03, 0.08, 0] })],
-    [28, grip],
-    [4, place(sphere(0.08), { t: [-0.95, 0.07, 0] })],
+    [32, lines(frame, 0.01)],
+    [38, boxPart],
+    [6, lines(grid, 0.008)],
+    [9, place(sphere(0.16), { t: [pinX, pinY + 0.12, pinZ] })],
+    [6, place(cylinder(0.15, 0.36, false, 0.005), { rz: Math.PI, t: [pinX, pinY - 0.12, pinZ] })],
+    [5, place(torus(0.34, 0.012), { t: [pinX, floorY + 0.01, pinZ] })],
+    [4, place(torus(0.6, 0.01), { t: [pinX, floorY + 0.01, pinZ] })],
   ]);
 }
 
@@ -613,7 +661,7 @@ export const SHAPES = {
   lattice,
   coins,
   microphone,
-  katana,
+  warehouse,
   cursor,
   stairs,
   plane,

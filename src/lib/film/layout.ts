@@ -81,7 +81,7 @@ export function placeShot(
   const cap = Math.min((h * MAX_HEIGHT) / ext.hy, (w * across) / ext.hx) * (shot.size ?? 1);
   // The still intro word stays whole on screen; other shapes may bleed off the edges.
   const avoid = shot.still ? [...obstacles.words, ...obstacles.chrome] : obstacles.words;
-  const spot = findSpot(avoid, ext, { w, h }, preferred(shot.side, w, h), cap, shot.still ? 0.99 : MIN_ON_SCREEN);
+  const spot = findSpot(avoid, ext, { w, h }, preferred(shot.side, w, h), cap, shot.still ? 0.99 : (shot.onScreen ?? MIN_ON_SCREEN));
   const pxPerUnit = h / 2 / half.h;
   return {
     x: (spot.cx - w / 2) / pxPerUnit,

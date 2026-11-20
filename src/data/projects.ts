@@ -169,45 +169,45 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: "samurai",
-    name: "Samurai",
-    title: [{ text: "Samurai", w: 118 }],
-    shape: "katana",
-    palette: "samurai",
+    slug: "wts",
+    name: "WTS",
+    title: [{ text: "WTS", w: 150 }],
+    shape: "warehouse",
+    palette: "wts",
     images: [],
-    label: "Concept, 2026",
+    label: "Design and build, 2026",
     year: "2026",
     role: "Design and development",
-    status: "Concept, hero only",
+    status: "Working demo",
     summary:
-      "A hero-only landing page concept for a designer-engineer. A light editorial layout with a scroll-driven splash of colour drawn in Three.js.",
-    tags: ["Astro", "Three.js", "TypeScript"],
-    repoHref: "https://github.com/lytoooon/Samurai",
+      "A 3D warehouse tracking app. Build a twin of your floor, track stock by shelf, run the docks, and find anything in seconds by asking in plain English.",
+    tags: ["React", "TypeScript", "React Three Fiber", "Zustand"],
+    repoNote: "Private repository",
     intro:
-      "A concept for an independent UI/UX designer and software engineer's portfolio: a light, editorial landing page with a splash of colour that moves as you scroll.",
+      "WTS turns a warehouse into a 3D model you can work in: lay out the racks, see what's on every shelf, and ask for what you need instead of hunting for it.",
     sections: [
       {
         heading: "What it is",
         body: [
-          "One screen, kept as a single hero on purpose. The page is static-first Astro, and the artwork is a Three.js scene that loads lazily. An SVG version stays in place until WebGL is ready, so the page never looks empty.",
+          "A warehouse tracking app built around a 3D twin of the floor. You sign up, describe your space in a short onboarding (workspace, floor size, starting layout, team), and land on a model of your own warehouse with an overview dashboard, inventory, docks, analytics, activity and team pages around it.",
         ],
       },
       {
-        heading: "The motion",
+        heading: "The 3D builder",
         body: [
-          "The splash starts on the first scroll instead of on page load, which keeps the first paint quick. After that it circulates with your scroll. If your system asks for reduced motion, it holds still.",
+          "Racks, pallets, docks, walls and zones are dragged onto a grid and snap into place. You can switch between 2D and 3D, hover any rack to see what it holds, and watch trucks wait at the busy doors.",
         ],
       },
       {
-        heading: "How it's organised",
+        heading: "Ask, don't search",
         body: [
-          "The hero is split into small modules: layout, header, artwork, geometry and shader. Each one can change without touching the others.",
+          "Instead of filters, you type or say what you want, like “low stock food near dock 2”, and the matching shelves light up. The question is understood in the browser, so it works offline. Heatmaps show picks, fill and expiry, and slotting suggestions move fast sellers closer to the docks in one click.",
         ],
       },
       {
-        heading: "Where it connects",
+        heading: "Docks and data",
         body: [
-          "The brush on this site is a cousin of it. Both are a shape that moves with your scroll instead of sitting there. Samurai stays a concept, and this site is where I took the idea further.",
+          "A dock timeline and yard queue let you start and complete appointments. Each user's workspace is saved in their browser, and everything can be exported and imported as JSON or CSV. Accounts are a local demo for now: passwords are hashed and stored in the browser, and no emails are sent.",
         ],
       },
     ],
